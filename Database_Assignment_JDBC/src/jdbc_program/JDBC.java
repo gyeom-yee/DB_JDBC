@@ -33,7 +33,13 @@ public class JDBC extends JFrame implements ActionListener {
 	private DefaultTableModel model;
 	private static final int BOOLEAN_COLUMN = 0;
 	private int NAME_COLUMN = 0;
+	private int SSN_COLUMN = 0;
+	private int BDATE_COLUMN = 0;
+	private int ADDRESS_COLUMN = 0;
+	private int SEX_COLUMN = 0;
 	private int SALARY_COLUMN = 0;
+	private int SUPERVISOR_COLUMN = 0;
+	private int DEPARTMENT_COLUMN = 0;
 	private String dShow;
 
 	private JButton Search_Button = new JButton("검색");
@@ -45,11 +51,12 @@ public class JDBC extends JFrame implements ActionListener {
 	JScrollPane ScPane;
 	private JLabel Emplabel = new JLabel("선택한 직원: ");
 	private JLabel ShowSelectedEmp = new JLabel();
-	private JLabel Setlabel = new JLabel("새로운 Salary: ");
-	private JTextField setSalary = new JTextField(10);
+	private JComboBox Update_column;
+	private JTextField setColumn = new JTextField(10);
 	private JButton Update_Button = new JButton("UPDATE");
 	private JButton Delete_Button = new JButton("선택한 데이터 삭제");
 	int count = 0;
+	
 
 	public JDBC() {
 
@@ -90,9 +97,11 @@ public class JDBC extends JFrame implements ActionListener {
 		TotalPanel.add(totalCount);
 
 		JPanel UpdatePanel = new JPanel();
+		String[] update_column = { "Fname", "Minit", "Lname", "Ssn", "Bdate", "Address", "Sex", "Salary", "Super_ssn", "Department" };
+		Update_column = new JComboBox(update_column);
 		UpdatePanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		UpdatePanel.add(Setlabel);
-		UpdatePanel.add(setSalary);
+		UpdatePanel.add(Update_column);
+		UpdatePanel.add(setColumn);
 		UpdatePanel.add(Update_Button);
 
 		JPanel DeletePanel = new JPanel();
@@ -119,8 +128,8 @@ public class JDBC extends JFrame implements ActionListener {
 		ShowVertical.add(Halfway);
 		ShowVertical.add(Bottom);
 
-		add(Top, BorderLayout.NORTH);
-		add(ShowVertical, BorderLayout.SOUTH);
+		getContentPane().add(Top, BorderLayout.NORTH);
+		getContentPane().add(ShowVertical, BorderLayout.SOUTH);
 
 		Search_Button.addActionListener(this);
 		Delete_Button.addActionListener(this);
@@ -146,13 +155,13 @@ public class JDBC extends JFrame implements ActionListener {
 			String url = "jdbc:mysql://localhost:3306/" + dbname + "?serverTimezone=UTC";
 
 			conn = DriverManager.getConnection(url, user, pwd);
-			System.out.println("정상적으로 연결되었습니다.");
+			System.out.println("Successfully connected.");
 
 		} catch (SQLException e1) {
-			System.err.println("연결할 수 없습니다.");
+			System.err.println("Unable to connect.");
 			e1.printStackTrace();
 		} catch (ClassNotFoundException e1) {
-			System.err.println("드라이버를 로드할 수 없습니다.");
+			System.err.println("Unable to identify the driver.");
 			e1.printStackTrace();
 		}
 
@@ -226,6 +235,7 @@ public class JDBC extends JFrame implements ActionListener {
 						stmt += ", dname";
 					Head.add("DEPARTMENT");
 				}
+				// Left outer join을 하는 이유는 Supervisor가 없는 경우(NULL)도 표시하기 위함.
 				stmt += " from EMPLOYEE e left outer join EMPLOYEE s on e.super_ssn=s.ssn, DEPARTMENT where e.dno = dnumber";
 
 				if (Category.getSelectedItem().toString() == "부서별") {
@@ -250,8 +260,20 @@ public class JDBC extends JFrame implements ActionListener {
 				for (int i = 0; i < Head.size(); i++) {
 					if (Head.get(i) == "NAME") {
 						NAME_COLUMN = i;
+					} else if (Head.get(i) == "SSN") {
+						SSN_COLUMN = i;
+					} else if (Head.get(i) == "BDATE") {
+						BDATE_COLUMN = i;
+					} else if (Head.get(i) == "ADDRESS") {
+						ADDRESS_COLUMN = i;
+					} else if (Head.get(i) == "SEX") {
+						SEX_COLUMN = i;
 					} else if (Head.get(i) == "SALARY") {
 						SALARY_COLUMN = i;
+					} else if (Head.get(i) == "SUPERVISOR") {
+						SUPERVISOR_COLUMN = i;
+					} else if (Head.get(i) == "DEPARTMENT") {
+						DEPARTMENT_COLUMN = i;
 					}
 				}
 				table = new JTable(model) {
@@ -296,7 +318,7 @@ public class JDBC extends JFrame implements ActionListener {
 				table.getModel().addTableModelListener(new CheckBoxModelListener());
 				ScPane.setPreferredSize(new Dimension(1100, 400));
 				panel.add(ScPane);
-				add(panel, BorderLayout.CENTER);
+				getContentPane().add(panel, BorderLayout.CENTER);
 				revalidate();
 
 			} else {
@@ -348,7 +370,7 @@ public class JDBC extends JFrame implements ActionListener {
 			ScPane = new JScrollPane(table);
 			ScPane.setPreferredSize(new Dimension(1100, 400));
 			panel.add(ScPane);
-			add(panel, BorderLayout.CENTER);
+			getContentPane().add(panel, BorderLayout.CENTER);
 			revalidate();
 
 		} // DELETE 끝
@@ -356,28 +378,203 @@ public class JDBC extends JFrame implements ActionListener {
 		// UPDATE
 		if (e.getSource() == Update_Button) {
 			Vector<String> update_ssn = new Vector<String>();
+			
 			try {
-				String columnName = model.getColumnName(6);
-				if (columnName == "SALARY") {
+				if (Update_column.getSelectedItem().toString() == "Fname") {
 					for (int i = 0; i < table.getRowCount(); i++) {
 						if (table.getValueAt(i, 0) == Boolean.TRUE) {
 							update_ssn.add((String) table.getValueAt(i, 2));
-							String updateSalary = setSalary.getText();
-							table.setValueAt(Double.parseDouble(updateSalary), i, SALARY_COLUMN);
+							String Name1 = (String) table.getValueAt(i, 1);
+							String word1 = Name1.split(" ")[1];
+							String word2 = Name1.split(" ")[2];
+							String updateColumn = setColumn.getText();
+							table.setValueAt(updateColumn + " " + word1 + " " + word2 , i, NAME_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Fname=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Minit") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String Name1 = (String) table.getValueAt(i, 1);
+							String word1 = Name1.split(" ")[0];
+							String word2 = Name1.split(" ")[2];
+							String updateColumn = setColumn.getText();
+							table.setValueAt( word1 + " " + updateColumn + " " + word2, i, NAME_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Minit=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Lname") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String Name1 = (String) table.getValueAt(i, 1);
+							String word1 = Name1.split(" ")[0];
+							String word2 = Name1.split(" ")[1];
+							String updateColumn = setColumn.getText();
+							table.setValueAt( word1 + " " + word2 + " " + updateColumn, i, NAME_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Lname=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Ssn") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String updateColumn = setColumn.getText();
+							table.setValueAt(updateColumn, i, SSN_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Ssn=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Bdate") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String updateColumn = setColumn.getText();
+							table.setValueAt(updateColumn, i, BDATE_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Bdate=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Address") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String updateColumn = setColumn.getText();
+							table.setValueAt(updateColumn, i, ADDRESS_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Address=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Sex") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String updateColumn = setColumn.getText();
+							table.setValueAt(updateColumn, i, SEX_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Sex=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Salary") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String updateColumn = setColumn.getText();
+							table.setValueAt(Double.parseDouble(updateColumn), i, SALARY_COLUMN);
 						}
 					}
 					for (int i = 0; i < update_ssn.size(); i++) {
 						String updateStmt = "UPDATE EMPLOYEE SET Salary=? WHERE Ssn=?";
 						PreparedStatement p = conn.prepareStatement(updateStmt);
 						p.clearParameters();
-						String updateSalary = setSalary.getText();
-						p.setString(1, updateSalary);
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
 						p.setString(2, String.valueOf(update_ssn.get(i)));
 						p.executeUpdate();
-
 					}
-				} else {
-					JOptionPane.showMessageDialog(null, "수정 작업을 진행하시려면 검색 항목을 모두 체크해주세요.");
+				} else if (Update_column.getSelectedItem().toString() == "Super_ssn") {
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String updateColumn = setColumn.getText();
+							for (int j = 0; j < table.getRowCount(); j++) {
+								if (updateColumn.equals((String) table.getValueAt(j, 2))) { //updateColumn 에는 상사의 Ssn이 들어옴
+									table.setValueAt((String) table.getValueAt(j, 1), i, SUPERVISOR_COLUMN); 
+								}
+							}
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Super_ssn=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
+				} else if (Update_column.getSelectedItem().toString() == "Department") { //Dno로 바꿔서 할 것
+					for (int i = 0; i < table.getRowCount(); i++) {
+						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							update_ssn.add((String) table.getValueAt(i, 2));
+							String updateColumn = setColumn.getText();
+							table.setValueAt(updateColumn, i, DEPARTMENT_COLUMN);
+						}
+					}
+					for (int i = 0; i < update_ssn.size(); i++) {
+						String updateStmt = "UPDATE EMPLOYEE SET Dno=? WHERE Ssn=?";
+						PreparedStatement p = conn.prepareStatement(updateStmt);
+						p.clearParameters();
+						String updateColumn = setColumn.getText();
+						String Dno5 = "Research";
+						String Dno4 = "Administration";
+						String Dno1 = "Headquaters";
+						if (updateColumn.equals(Dno5)) {
+							updateColumn = "5";
+						} else if (updateColumn.equals(Dno4)) {
+							updateColumn = "4";
+						} else if (updateColumn.equals(Dno1)) {
+							updateColumn = "1";
+						} else {
+							JOptionPane.showMessageDialog(null, "Research, Administration, Headquaters 세 부서만 입력해주세요.");
+						}
+						p.setString(1, updateColumn);
+						p.setString(2, String.valueOf(update_ssn.get(i)));
+						p.executeUpdate();
+					}
 				}
 
 				ShowSelectedEmp.setText(" ");
@@ -390,7 +587,7 @@ public class JDBC extends JFrame implements ActionListener {
 			ScPane = new JScrollPane(table);
 			ScPane.setPreferredSize(new Dimension(1100, 400));
 			panel.add(ScPane);
-			add(panel, BorderLayout.CENTER);
+			getContentPane().add(panel, BorderLayout.CENTER);
 			revalidate();
 
 		} // UPDATE 끝
