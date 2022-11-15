@@ -380,7 +380,9 @@ public class JDBC extends JFrame implements ActionListener {
 			Vector<String> update_ssn = new Vector<String>();
 			
 			try {
-				if (Update_column.getSelectedItem().toString() == "Fname") {
+				if (setColumn.getText().isEmpty()) {
+					throw new Exception();
+				} else if (Update_column.getSelectedItem().toString() == "Fname") {
 					for (int i = 0; i < table.getRowCount(); i++) {
 						if (table.getValueAt(i, 0) == Boolean.TRUE) {
 							update_ssn.add((String) table.getValueAt(i, 2));
@@ -444,7 +446,7 @@ public class JDBC extends JFrame implements ActionListener {
 					for (int i = 0; i < table.getRowCount(); i++) {
 						if (table.getValueAt(i, 0) == Boolean.TRUE) {
 							update_ssn.add((String) table.getValueAt(i, 2));
-							String updateColumn = setColumn.getText();
+							Integer updateColumn = Integer.parseInt(setColumn.getText());
 							table.setValueAt(updateColumn, i, SSN_COLUMN);
 						}
 					}
@@ -528,12 +530,17 @@ public class JDBC extends JFrame implements ActionListener {
 				} else if (Update_column.getSelectedItem().toString() == "Super_ssn") {
 					for (int i = 0; i < table.getRowCount(); i++) {
 						if (table.getValueAt(i, 0) == Boolean.TRUE) {
+							Boolean flag = Boolean.FALSE;
 							update_ssn.add((String) table.getValueAt(i, 2));
 							String updateColumn = setColumn.getText();
 							for (int j = 0; j < table.getRowCount(); j++) {
 								if (updateColumn.equals((String) table.getValueAt(j, 2))) { //updateColumn 에는 상사의 Ssn이 들어옴
-									table.setValueAt((String) table.getValueAt(j, 1), i, SUPERVISOR_COLUMN); 
+									table.setValueAt((String) table.getValueAt(j, 1), i, SUPERVISOR_COLUMN);
+									flag = Boolean.TRUE;
 								}
+							}
+							if (flag == Boolean.FALSE) {
+								throw new Exception("존재하는 직원을 입력해주세요.");
 							}
 						}
 					}
@@ -547,11 +554,18 @@ public class JDBC extends JFrame implements ActionListener {
 						p.executeUpdate();
 					}
 				} else if (Update_column.getSelectedItem().toString() == "Department") { //Dno로 바꿔서 할 것
+					String Dno5 = "Research";
+					String Dno4 = "Administration";
+					String Dno1 = "Headquaters";
 					for (int i = 0; i < table.getRowCount(); i++) {
 						if (table.getValueAt(i, 0) == Boolean.TRUE) {
 							update_ssn.add((String) table.getValueAt(i, 2));
 							String updateColumn = setColumn.getText();
-							table.setValueAt(updateColumn, i, DEPARTMENT_COLUMN);
+							if (updateColumn.equals(Dno5) || updateColumn.equals(Dno4)|| updateColumn.equals(Dno1)) {
+								table.setValueAt(updateColumn, i, DEPARTMENT_COLUMN);
+							} else {
+								throw new Exception("Research, Administration, Headquaters 세 부서만 입력해주세요.");
+							}
 						}
 					}
 					for (int i = 0; i < update_ssn.size(); i++) {
@@ -559,17 +573,13 @@ public class JDBC extends JFrame implements ActionListener {
 						PreparedStatement p = conn.prepareStatement(updateStmt);
 						p.clearParameters();
 						String updateColumn = setColumn.getText();
-						String Dno5 = "Research";
-						String Dno4 = "Administration";
-						String Dno1 = "Headquaters";
+						
 						if (updateColumn.equals(Dno5)) {
 							updateColumn = "5";
 						} else if (updateColumn.equals(Dno4)) {
 							updateColumn = "4";
 						} else if (updateColumn.equals(Dno1)) {
 							updateColumn = "1";
-						} else {
-							JOptionPane.showMessageDialog(null, "Research, Administration, Headquaters 세 부서만 입력해주세요.");
 						}
 						p.setString(1, updateColumn);
 						p.setString(2, String.valueOf(update_ssn.get(i)));
@@ -579,9 +589,18 @@ public class JDBC extends JFrame implements ActionListener {
 
 				ShowSelectedEmp.setText(" ");
 
+			} catch (NumberFormatException e1) {
+				JOptionPane.showMessageDialog(null, "숫자 형식에 맞게 입력해주세요.");
 			} catch (SQLException e1) {
 				System.out.println("actionPerformed err : " + e1);
 				e1.printStackTrace();
+			} catch (Exception e1) {
+				String errMsg = e1.toString();
+				if (errMsg.equals("java.lang.Exception")) {
+					JOptionPane.showMessageDialog(null, "형식에 맞게 입력해주세요.");
+				} else {
+					JOptionPane.showMessageDialog(null, errMsg.substring(20));
+				}
 			}
 			panel = new JPanel();
 			ScPane = new JScrollPane(table);
